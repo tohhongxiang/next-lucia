@@ -10,8 +10,6 @@ import { lucia, validateRequest } from "@/lib/auth";
 import { cookies } from "next/headers";
 
 export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
-	console.log(values);
-
 	const hashedPassword = await new Argon2id().hash(values.password);
 	const userId = generateId(15);
 

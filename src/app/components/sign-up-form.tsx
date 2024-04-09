@@ -65,7 +65,13 @@ export default function SignUpForm() {
 							<FormControl>
 								<Input placeholder="shadcn" {...field} />
 							</FormControl>
-							<FormMessage />
+							{form.formState.errors.username ? (
+								<FormMessage />
+							) : (
+								<FormDescription>
+									Username must be at least 3 characters long
+								</FormDescription>
+							)}
 						</FormItem>
 					)}
 				/>
@@ -82,7 +88,13 @@ export default function SignUpForm() {
 									{...field}
 								/>
 							</FormControl>
-							<FormMessage />
+							{form.formState.errors.password ? (
+								<FormMessage />
+							) : (
+								<FormDescription>
+									Password must be at least 8 characters long
+								</FormDescription>
+							)}
 						</FormItem>
 					)}
 				/>

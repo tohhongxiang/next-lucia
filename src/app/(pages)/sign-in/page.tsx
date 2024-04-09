@@ -1,6 +1,11 @@
 import SignInForm from "@/app/components/sign-in-form";
 import { validateRequest } from "@/lib/auth";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+	title: "Sign In",
+};
 
 export default async function SignInPage() {
 	const { user } = await validateRequest();
@@ -10,8 +15,8 @@ export default async function SignInPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-screen-xl px-4 py-16 sm:px-6 lg:px-8">
-			<div className="mx-auto max-w-lg text-center">
+		<div className="mx-auto max-w-prose px-4 py-16 sm:px-6 lg:px-8">
+			<div className="mx-auto w-full text-center">
 				<h1 className="text-2xl font-bold sm:text-3xl">
 					Sign In to your Account
 				</h1>
