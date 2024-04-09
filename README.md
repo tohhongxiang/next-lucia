@@ -1,3 +1,19 @@
+# Setup
+
+Clone github repository
+
+```sh
+git clone https://github.com/tohhongxiang/next-lucia.git
+cd next-lucia
+```
+
+Copy `.env.example` to `.env` and fill in environment variables. Then,
+
+```sh
+npm install
+npm run dev
+```
+
 # Documentation
 
 - https://lucia-auth.com/
