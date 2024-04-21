@@ -20,6 +20,7 @@ import { SignInSchema } from "../types";
 import { signIn } from "../actions/auth.actions";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function SignInForm() {
 	const router = useRouter();
@@ -32,7 +33,9 @@ export default function SignInForm() {
 		},
 	});
 
+	const [isLoading, setIsLoading] = useState(false);
 	const onSubmit = async (values: z.infer<typeof SignInSchema>) => {
+		setIsLoading(true);
 		const result = await signIn(values);
 		if (result.error) {
 			toast({
@@ -49,6 +52,7 @@ export default function SignInForm() {
 
 			router.push("/");
 		}
+		setIsLoading(false);
 	};
 
 	return (
@@ -84,7 +88,9 @@ export default function SignInForm() {
 						</FormItem>
 					)}
 				/>
-				<Button type="submit">Submit</Button>
+				<Button type="submit" disabled={isLoading}>
+					{isLoading ? "Loading..." : "Sign In"}
+				</Button>
 				<p className="text-center text-sm text-gray-500">
 					Don&apos;t have an account?{" "}
 					<Link className="underline" href="/sign-up">
