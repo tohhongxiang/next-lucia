@@ -17,6 +17,7 @@ npm run dev
 # Documentation
 
 - https://lucia-auth.com/
+- https://arctic.js.org/
 - https://ui.shadcn.com/
 - https://orm.drizzle.team/
 

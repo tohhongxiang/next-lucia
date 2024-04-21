@@ -4,10 +4,12 @@ import { z } from "zod";
 import { SignInSchema, SignUpSchema } from "../types";
 import { Argon2id } from "oslo/password";
 import { generateId } from "lucia";
-import db from "../lib/db";
-import { userTable } from "../lib/db/schema";
-import { lucia, validateRequest } from "@/lib/auth";
+import db from "../../lib/database";
+import { userTable } from "../../lib/database/schema";
+import { lucia, validateRequest } from "@/lib/lucia";
 import { cookies } from "next/headers";
+import { generateCodeVerifier, generateState } from "arctic";
+import { google } from "@/lib/lucia/oauth";
 
 export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
 	const hashedPassword = await new Argon2id().hash(values.password);
@@ -129,5 +131,43 @@ export const signOut = async () => {
 			error: "An unexpected error occurred",
 			details: error,
 		};
+	}
+};
+
+export const createGoogleAuthorizationURL = async () => {
+	try {
+		const state = generateState();
+		const codeVerifier = generateCodeVerifier();
+
+		cookies().set("codeVerifier", codeVerifier, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+		});
+
+		cookies().set("state", state, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+		});
+
+		const authorizationURL = await google.createAuthorizationURL(
+			state,
+			codeVerifier,
+			{
+				scopes: ["email", "profile"],
+			}
+		);
+
+		return {
+			success: true,
+			data: authorizationURL.toString(),
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			return {
+				error: error.message,
+			};
+		}
+
+		return { error: "Unexpected error occurred" };
 	}
 };

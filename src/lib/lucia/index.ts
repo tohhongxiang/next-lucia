@@ -1,16 +1,17 @@
-import adapter from "@/app/lib/db/adapter";
+import adapter from "@/lib/lucia/adapter";
 import { Lucia } from "lucia";
 
 import { cookies } from "next/headers";
 import { cache } from "react";
+import { User } from "../database/schema";
 
 export const lucia = new Lucia(adapter, {
 	sessionCookie: {
 		attributes: {
-			// set to `true` when using HTTPS
 			secure: process.env.NODE_ENV === "production",
 		},
 	},
+	getUserAttributes: (attributes) => attributes,
 });
 
 export const validateRequest = cache(async () => {
@@ -50,5 +51,6 @@ export const validateRequest = cache(async () => {
 declare module "lucia" {
 	interface Register {
 		Lucia: typeof lucia;
+		DatabaseUserAttributes: User;
 	}
 }
