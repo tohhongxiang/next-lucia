@@ -17,11 +17,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignInSchema } from "../types";
-import { createGoogleAuthorizationURL, signIn } from "../actions/auth.actions";
+import {
+	createGithubAuthorizationURL,
+	createGoogleAuthorizationURL,
+	signIn,
+} from "../actions/auth.actions";
 import { toast } from "@/components/ui/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import { TriangleAlert } from "lucide-react";
+import ErrorMessage from "./error-message";
 
 export default function SignInForm() {
 	const router = useRouter();
@@ -36,14 +42,12 @@ export default function SignInForm() {
 
 	const [isLoading, setIsLoading] = useState(false);
 	const onSubmit = async (values: z.infer<typeof SignInSchema>) => {
+		form.clearErrors();
 		setIsLoading(true);
+
 		const result = await signIn(values);
 		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Error!",
-				description: result.error,
-			});
+			form.setError("root", { message: result.error });
 		} else if (result.success) {
 			toast({
 				variant: "default",
@@ -65,13 +69,29 @@ export default function SignInForm() {
 				description: res.error,
 			});
 		} else if (res.success) {
-			window.location.href = res.data;
+			router.push(res.data);
 		}
 	};
 
+	const onGithubSignInClick = async () => {
+		const res = await createGithubAuthorizationURL();
+
+		if (res.error) {
+			toast({
+				variant: "destructive",
+				description: res.error,
+			});
+		} else if (res.success) {
+			router.push(res.data);
+		}
+	};
+
+	const searchParams = useSearchParams();
+	const error = searchParams.get("error");
 	return (
 		<>
 			<div className="flex flex-col gap-4 w-full items-center justify-center">
+				{error && <ErrorMessage message={error} />}
 				<Button
 					variant="outline"
 					className="w-full flex justify-center items-center gap-2"
@@ -83,6 +103,7 @@ export default function SignInForm() {
 				<Button
 					variant="outline"
 					className="w-full flex justify-center items-center gap-2"
+					onClick={onGithubSignInClick}
 				>
 					<SiGithub className="w-4 h-4 mr-auto shrink-0" />
 					<span className="mr-auto">Sign In with Github</span>
@@ -130,6 +151,11 @@ export default function SignInForm() {
 							</FormItem>
 						)}
 					/>
+					{form.formState.errors.root?.message && (
+						<ErrorMessage
+							message={form.formState.errors.root.message}
+						/>
+					)}
 					<Button type="submit" disabled={isLoading}>
 						{isLoading ? "Loading..." : "Sign In"}
 					</Button>

@@ -1,21 +1,18 @@
 import db from "@/lib/database";
 import { oauthAccountTable, userTable } from "@/lib/database/schema";
 import { lucia } from "@/lib/lucia";
-import { google } from "@/lib/lucia/oauth";
-import { GoogleTokens, OAuth2RequestError } from "arctic";
+import { github, google } from "@/lib/lucia/oauth";
+import { GitHubTokens, GoogleTokens, OAuth2RequestError } from "arctic";
 import { and, eq } from "drizzle-orm";
 import { generateId } from "lucia";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-interface GoogleUser {
-	id: string;
-	email: string;
-	verified_email: boolean;
+interface GithubUser {
+	id: number;
+	avatar_url: string;
 	name: string;
-	given_name: string;
-	picture: string;
-	locale: string;
+	email?: string; // if user is privated, this field is undefined
 }
 
 export const GET = async (req: NextRequest) => {
@@ -26,34 +23,27 @@ export const GET = async (req: NextRequest) => {
 		const code = searchParams.get("code");
 		const state = searchParams.get("state");
 
-		const storedCodeVerifier = cookies().get("codeVerifier")?.value;
 		const storedState = cookies().get("state")?.value;
 
-		if (
-			!code ||
-			!storedState ||
-			!storedCodeVerifier ||
-			state !== storedState
-		) {
+		if (!code || !storedState || state !== storedState) {
 			throw new Error("Invalid request");
 		}
 
-		const googleTokens: GoogleTokens =
-			await google.validateAuthorizationCode(code, storedCodeVerifier);
+		const githubTokens = await github.validateAuthorizationCode(code);
 
-		const googleData: GoogleUser = await fetch(
-			"https://www.googleapis.com/oauth2/v1/userinfo",
+		const githubData: GithubUser = await fetch(
+			"https://api.github.com/user",
 			{
 				headers: {
-					Authorization: `Bearer ${googleTokens.accessToken}`,
+					Authorization: `Bearer ${githubTokens.accessToken}`,
 				},
 				method: "GET",
 			}
 		).then((res) => res.json());
 
 		const { userId } = await createOrUpdateDatabase(
-			googleTokens,
-			googleData
+			githubTokens,
+			githubData
 		);
 
 		const session = await lucia.createSession(userId, {
@@ -68,7 +58,6 @@ export const GET = async (req: NextRequest) => {
 		);
 
 		cookies().set("state", "", { expires: new Date(0) });
-		cookies().set("codeVerifier", "", { expires: new Date(0) });
 
 		return NextResponse.redirect(
 			new URL("/", process.env.NEXT_PUBLIC_BASE_URL),
@@ -88,14 +77,15 @@ export const GET = async (req: NextRequest) => {
 };
 
 async function createOrUpdateDatabase(
-	googleTokens: GoogleTokens,
-	googleData: GoogleUser
+	githubTokens: GitHubTokens,
+	githubData: GithubUser
 ) {
 	const response = await db.transaction(async (trx) => {
+		// get corresponding user where provider == "github" and providerUserId is matching
 		const oauthUser = await trx.query.oauthAccountTable.findFirst({
 			where: and(
-				eq(oauthAccountTable.providerUserId, googleData.id),
-				eq(oauthAccountTable.provider, "google")
+				eq(oauthAccountTable.providerUserId, githubData.id.toString()),
+				eq(oauthAccountTable.provider, "github")
 			),
 		});
 
@@ -103,14 +93,15 @@ async function createOrUpdateDatabase(
 			const updatedOAuthAccountRes = await trx
 				.update(oauthAccountTable)
 				.set({
-					accessToken: googleTokens.accessToken,
-					expiresAt: googleTokens.accessTokenExpiresAt,
-					refreshToken: googleTokens.refreshToken,
+					accessToken: githubTokens.accessToken,
 				})
 				.where(
 					and(
-						eq(oauthAccountTable.providerUserId, googleData.id),
-						eq(oauthAccountTable.provider, "google")
+						eq(
+							oauthAccountTable.providerUserId,
+							githubData.id.toString()
+						),
+						eq(oauthAccountTable.provider, "github")
 					)
 				);
 
@@ -122,7 +113,7 @@ async function createOrUpdateDatabase(
 		}
 
 		const user = await trx.query.userTable.findFirst({
-			where: eq(userTable.email, googleData.email),
+			where: eq(userTable.email, githubData.email ?? ""),
 		});
 
 		if (user) {
@@ -132,10 +123,10 @@ async function createOrUpdateDatabase(
 		const newUserId = generateId(15);
 
 		const createdUserRes = await trx.insert(userTable).values({
-			email: googleData.email,
 			id: newUserId,
-			username: googleData.name,
-			profilePictureUrl: googleData.picture,
+			username: githubData.name,
+			profilePictureUrl: githubData.avatar_url,
+			email: githubData.email,
 		});
 
 		if (createdUserRes.rowCount === 0) {
@@ -146,11 +137,9 @@ async function createOrUpdateDatabase(
 			.insert(oauthAccountTable)
 			.values({
 				userId: newUserId,
-				provider: "google",
-				providerUserId: googleData.id,
-				accessToken: googleTokens.accessToken,
-				expiresAt: googleTokens.accessTokenExpiresAt,
-				refreshToken: googleTokens.refreshToken,
+				provider: "github",
+				providerUserId: githubData.id.toString(),
+				accessToken: githubTokens.accessToken,
 			});
 
 		if (createdOAuthAccountRes.rowCount === 0) {

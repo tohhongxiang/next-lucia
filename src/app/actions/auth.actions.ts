@@ -7,9 +7,9 @@ import { generateId } from "lucia";
 import db from "../../lib/database";
 import { userTable } from "../../lib/database/schema";
 import { lucia, validateRequest } from "@/lib/lucia";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { generateCodeVerifier, generateState } from "arctic";
-import { google } from "@/lib/lucia/oauth";
+import { github, google } from "@/lib/lucia/oauth";
 
 export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
 	const hashedPassword = await new Argon2id().hash(values.password);
@@ -156,6 +156,34 @@ export const createGoogleAuthorizationURL = async () => {
 				scopes: ["email", "profile"],
 			}
 		);
+
+		return {
+			success: true,
+			data: authorizationURL.toString(),
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			return {
+				error: error.message,
+			};
+		}
+
+		return { error: "Unexpected error occurred" };
+	}
+};
+
+export const createGithubAuthorizationURL = async () => {
+	try {
+		const state = generateState();
+
+		cookies().set("state", state, {
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+		});
+
+		const authorizationURL = await github.createAuthorizationURL(state, {
+			scopes: ["user:email"],
+		});
 
 		return {
 			success: true,

@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignUpSchema } from "../types";
-import { createGoogleAuthorizationURL, signUp } from "../actions/auth.actions";
+import {
+	createGithubAuthorizationURL,
+	createGoogleAuthorizationURL,
+	signUp,
+} from "../actions/auth.actions";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -71,6 +75,19 @@ export default function SignUpForm() {
 		}
 	};
 
+	const onGithubSignInClick = async () => {
+		const res = await createGithubAuthorizationURL();
+
+		if (res.error) {
+			toast({
+				variant: "destructive",
+				description: res.error,
+			});
+		} else if (res.success) {
+			router.push(res.data);
+		}
+	};
+
 	return (
 		<>
 			<div className="flex flex-col gap-4 w-full items-center justify-center">
@@ -85,6 +102,7 @@ export default function SignUpForm() {
 				<Button
 					variant="outline"
 					className="w-full flex justify-center items-center gap-2"
+					onClick={onGithubSignInClick}
 				>
 					<SiGithub className="w-4 h-4 mr-auto shrink-0" />
 					<span className="mr-auto">Sign up with Github</span>
