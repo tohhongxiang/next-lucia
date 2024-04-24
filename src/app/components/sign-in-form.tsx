@@ -26,7 +26,6 @@ import { toast } from "@/components/ui/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
-import { TriangleAlert } from "lucide-react";
 import ErrorMessage from "./error-message";
 
 export default function SignInForm() {
@@ -35,7 +34,7 @@ export default function SignInForm() {
 	const form = useForm<z.infer<typeof SignInSchema>>({
 		resolver: zodResolver(SignInSchema),
 		defaultValues: {
-			username: "",
+			email: "",
 			password: "",
 		},
 	});
@@ -123,12 +122,15 @@ export default function SignInForm() {
 				>
 					<FormField
 						control={form.control}
-						name="username"
+						name="email"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Username</FormLabel>
+								<FormLabel>Email</FormLabel>
 								<FormControl>
-									<Input placeholder="shadcn" {...field} />
+									<Input
+										placeholder="shadcn@example.com"
+										{...field}
+									/>
 								</FormControl>
 								<FormMessage />
 							</FormItem>

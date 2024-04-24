@@ -10,8 +10,19 @@ import { lucia, validateRequest } from "@/lib/lucia";
 import { cookies, headers } from "next/headers";
 import { generateCodeVerifier, generateState } from "arctic";
 import { github, google } from "@/lib/lucia/oauth";
+import { eq } from "drizzle-orm";
 
 export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
+	const existingUser = await db.query.userTable.findFirst({
+		where: eq(userTable.email, values.email),
+	});
+
+	if (existingUser) {
+		return {
+			error: "An account with this email already exists. Please sign in instead",
+		};
+	}
+
 	const hashedPassword = await new Argon2id().hash(values.password);
 	const userId = generateId(15);
 
@@ -21,6 +32,7 @@ export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
 			.values({
 				id: userId,
 				username: values.username,
+				email: values.email,
 				hashedPassword,
 			})
 			.returning({ id: userTable.id, username: userTable.username });
@@ -59,18 +71,12 @@ export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
 
 export const signIn = async (values: z.infer<typeof SignInSchema>) => {
 	const existingUser = await db.query.userTable.findFirst({
-		where: (table, { eq }) => eq(table.username, values.username),
+		where: (table, { eq }) => eq(table.email, values.email),
 	});
 
-	if (!existingUser) {
+	if (!existingUser || !existingUser.hashedPassword) {
 		return {
-			error: "User not found",
-		};
-	}
-
-	if (!existingUser.hashedPassword) {
-		return {
-			error: "User not found",
+			error: "Email or password is incorrect",
 		};
 	}
 
@@ -80,7 +86,7 @@ export const signIn = async (values: z.infer<typeof SignInSchema>) => {
 	);
 	if (!isValidPassword) {
 		return {
-			error: "Incorrect password",
+			error: "Email or password is incorrect",
 		};
 	}
 

@@ -112,21 +112,12 @@ async function createOrUpdateDatabase(
 			return { userId: oauthUser.userId };
 		}
 
-		const user = await trx.query.userTable.findFirst({
-			where: eq(userTable.email, githubData.email ?? ""),
-		});
-
-		if (user) {
-			throw new Error("User already exists in database");
-		}
-
 		const newUserId = generateId(15);
 
 		const createdUserRes = await trx.insert(userTable).values({
 			id: newUserId,
 			username: githubData.name,
 			profilePictureUrl: githubData.avatar_url,
-			email: githubData.email,
 		});
 
 		if (createdUserRes.rowCount === 0) {

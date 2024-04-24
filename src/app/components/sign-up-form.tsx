@@ -27,6 +27,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import ErrorMessage from "./error-message";
 
 export default function SignUpForm() {
 	const router = useRouter();
@@ -35,6 +36,7 @@ export default function SignUpForm() {
 		resolver: zodResolver(SignUpSchema),
 		defaultValues: {
 			username: "",
+			email: "",
 			password: "",
 			confirmPassword: "",
 		},
@@ -43,13 +45,10 @@ export default function SignUpForm() {
 	const [isLoading, setIsLoading] = useState(false);
 	const onSubmit = async (values: z.infer<typeof SignUpSchema>) => {
 		setIsLoading(true);
+
 		const result = await signUp(values);
 		if (result.error) {
-			toast({
-				variant: "destructive",
-				title: "Error!",
-				description: result.error,
-			});
+			form.setError("root", { message: result.error });
 		} else if (result.success) {
 			toast({
 				variant: "default",
@@ -142,6 +141,22 @@ export default function SignUpForm() {
 					/>
 					<FormField
 						control={form.control}
+						name="email"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Email</FormLabel>
+								<FormControl>
+									<Input
+										placeholder="shadcn@example.com"
+										{...field}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					<FormField
+						control={form.control}
 						name="password"
 						render={({ field }) => (
 							<FormItem>
@@ -181,6 +196,11 @@ export default function SignUpForm() {
 							</FormItem>
 						)}
 					/>
+					{form.formState.errors.root?.message && (
+						<ErrorMessage
+							message={form.formState.errors.root.message}
+						/>
+					)}
 					<Button type="submit" disabled={isLoading}>
 						{isLoading ? "Loading..." : "Sign Up"}
 					</Button>
