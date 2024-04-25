@@ -56,29 +56,17 @@ export default function SignInEmailPassword() {
 		form.clearErrors();
 
 		const fieldsToValidate = steps[currentStep].fields;
+
+		setIsLoading(true);
 		const areFormFieldsValid = await form.trigger(
 			fieldsToValidate as FieldName<z.infer<typeof SignUpSchema>>[],
 			{
 				shouldFocus: true,
 			}
 		);
+		setIsLoading(false);
 
 		if (!areFormFieldsValid) return;
-
-		if (fieldsToValidate.includes("email")) {
-			setIsLoading(true);
-			const existingUser = await getExistingUserByEmail(
-				form.getValues().email
-			);
-			setIsLoading(false);
-			if (existingUser) {
-				form.setError("root", {
-					message:
-						"An account with this email exists. Please sign in instead",
-				});
-				return;
-			}
-		}
 
 		if (currentStep === steps.length - 1) {
 			await form.handleSubmit(onSubmit)();
@@ -102,6 +90,7 @@ export default function SignInEmailPassword() {
 
 			router.push("/");
 		}
+
 		setIsLoading(false);
 	};
 
