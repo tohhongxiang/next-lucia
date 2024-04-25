@@ -69,6 +69,12 @@ export const signUp = async (values: z.infer<typeof SignUpSchema>) => {
 	}
 };
 
+export const getExistingUserByEmail = async (email: string) => {
+	return db.query.userTable.findFirst({
+		where: (table, { eq }) => eq(table.email, email),
+	});
+};
+
 export const signIn = async (values: z.infer<typeof SignInSchema>) => {
 	const existingUser = await db.query.userTable.findFirst({
 		where: (table, { eq }) => eq(table.email, values.email),

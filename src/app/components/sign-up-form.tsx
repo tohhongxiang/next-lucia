@@ -1,65 +1,18 @@
 "use client";
 
-import Link from "next/link";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
-import {
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { SignUpSchema } from "../types";
 import {
 	createGithubAuthorizationURL,
 	createGoogleAuthorizationURL,
-	signUp,
 } from "../actions/auth.actions";
 import { toast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
-import ErrorMessage from "./error-message";
+import SignInEmailPassword from "./sign-in-email-password";
+import Link from "next/link";
 
 export default function SignUpForm() {
 	const router = useRouter();
-
-	const form = useForm<z.infer<typeof SignUpSchema>>({
-		resolver: zodResolver(SignUpSchema),
-		defaultValues: {
-			username: "",
-			email: "",
-			password: "",
-			confirmPassword: "",
-		},
-	});
-
-	const [isLoading, setIsLoading] = useState(false);
-	const onSubmit = async (values: z.infer<typeof SignUpSchema>) => {
-		setIsLoading(true);
-
-		const result = await signUp(values);
-		if (result.error) {
-			form.setError("root", { message: result.error });
-		} else if (result.success) {
-			toast({
-				variant: "default",
-				title: "Account created successfully!",
-				description: "You will be redirected shortly...",
-			});
-
-			router.push("/");
-		}
-		setIsLoading(false);
-	};
 
 	const onGoogleSignInClick = async () => {
 		const res = await createGoogleAuthorizationURL();
@@ -114,104 +67,13 @@ export default function SignUpForm() {
 				</span>
 				<hr className="my-8 border grow" />
 			</div>
-			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className="space-y-8"
-				>
-					<FormField
-						control={form.control}
-						name="username"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Username</FormLabel>
-								<FormControl>
-									<Input placeholder="shadcn" {...field} />
-								</FormControl>
-								{form.formState.errors.username ? (
-									<FormMessage />
-								) : (
-									<FormDescription>
-										Username must be at least 3 characters
-										long
-									</FormDescription>
-								)}
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name="email"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Email</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="shadcn@example.com"
-										{...field}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name="password"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Password</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="********"
-										type="password"
-										{...field}
-									/>
-								</FormControl>
-								{form.formState.errors.password ? (
-									<FormMessage />
-								) : (
-									<FormDescription>
-										Password must be at least 8 characters
-										long
-									</FormDescription>
-								)}
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name="confirmPassword"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Confirm Password</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="********"
-										type="password"
-										{...field}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-					{form.formState.errors.root?.message && (
-						<ErrorMessage
-							message={form.formState.errors.root.message}
-						/>
-					)}
-					<Button type="submit" disabled={isLoading}>
-						{isLoading ? "Loading..." : "Sign Up"}
-					</Button>
-					<p className="text-center text-sm text-gray-500">
-						Already have an account?{" "}
-						<Link className="underline" href="/sign-in">
-							Sign in
-						</Link>
-					</p>
-				</form>
-			</Form>
+			<SignInEmailPassword />
+			<p className="text-center text-sm text-gray-500">
+				Already have an account?{" "}
+				<Link className="underline" href="/sign-in">
+					Sign in
+				</Link>
+			</p>
 		</>
 	);
 }

@@ -15,10 +15,15 @@ export const SignUpSchema = z
 		confirmPassword: z
 			.string()
 			.min(8, { message: "Password must be at least 8 characters long" }),
+		acceptTermsAndConditions: z.boolean(),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Passwords do not match",
 		path: ["confirmPassword"],
+	})
+	.refine((data) => data.acceptTermsAndConditions, {
+		message: "Please accept the terms and conditions",
+		path: ["acceptTermsAndConditions"],
 	});
 
 export const SignInSchema = z.object({
